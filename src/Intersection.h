@@ -1,13 +1,14 @@
 #ifndef INTERSECTION_H
 #define INTERSECTION_H
 
+#include "TrafficObject.h"
+#include "TrafficLight.h"
+
 #include <vector>
 #include <future>
 #include <mutex>
 #include <memory>
 #include <atomic>
-#include "TrafficObject.h"
-#include "TrafficLight.h"
 
 class Street;
 class Vehicle;
@@ -18,7 +19,7 @@ class WaitingVehicles
 public:
     int getSize() const;
 
-    void pushBack(std::shared_ptr<Vehicle> vehicle, std::promise<void> &&promise);
+    std::future<void> pushBack(std::shared_ptr<Vehicle> vehicle);
     void permitEntryToFirstInQueue();
 
 private:
@@ -33,17 +34,20 @@ class Intersection : public TrafficObject
 public:
     Intersection();
 
-    void setIsBlocked(bool isBlocked);
+    std::vector<std::shared_ptr<Street>> queryStreets(std::shared_ptr<Street> incoming) const; // return list of all outgoing streets
+    bool trafficLightIsGreen() const;
 
-    void addVehicleToQueue(std::shared_ptr<Vehicle> vehicle);
     void addStreet(std::shared_ptr<Street> street);
-    std::vector<std::shared_ptr<Street>> queryStreets(std::shared_ptr<Street> incoming); // return pointer to current list of all outgoing streets
-    void simulate() override;
+
+    void waitForPermissionToEnter(std::shared_ptr<Vehicle> vehicle);
     void vehicleHasLeft(std::shared_ptr<Vehicle> vehicle);
-    bool trafficLightIsGreen();
+
+    void simulate() override;
 
 private:
     void processVehicleQueue();
+
+    void setIsBlocked(bool isBlocked);
 
     std::vector<std::shared_ptr<Street>> _streets;   // list of all streets connected to this intersection
     TrafficLight _trafficLight;                      // traffic light of this intersection

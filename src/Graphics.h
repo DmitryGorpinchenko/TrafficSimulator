@@ -1,10 +1,11 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#include "TrafficObject.h"
+
 #include <string>
 #include <vector>
 #include <opencv2/core.hpp>
-#include "TrafficObject.h"
 
 class Graphics
 {

@@ -1,6 +1,6 @@
-#include <iostream>
-#include <random>
 #include "TrafficLight.h"
+
+#include <random>
 
 /* Implementation of class "MessageQueue" */
 
@@ -12,21 +12,22 @@ MessageQueue<T>::MessageQueue(size_t max_size)
 template <typename T>
 void MessageQueue<T>::send(T &&msg)
 {
-    std::lock_guard lck(_mutex);
+    {
+        std::lock_guard lock(_mutex);
 
-    _queue.push_back(std::move(msg));
-    while (_queue.size() > _max_size) {
-        _queue.pop_front();
+        _queue.push_back(std::move(msg));
+        while (_queue.size() > _max_size) {
+            _queue.pop_front();
+        }
     }
-
     _condition.notify_one();
 }
 
 template <typename T>
 T MessageQueue<T>::receive()
 {
-    std::unique_lock lck(_mutex);
-    _condition.wait(lck, [this]() { return !_queue.empty(); });
+    std::unique_lock lock(_mutex);
+    _condition.wait(lock, [this]() { return !_queue.empty(); });
 
     T msg = std::move(_queue.front());
     _queue.pop_front();
@@ -36,7 +37,8 @@ T MessageQueue<T>::receive()
 /* Implementation of class "TrafficLight" */
  
 TrafficLight::TrafficLight()
-    : _msg(1)
+    : TrafficObject(ObjectType::objectTrafficLight)
+    , _msg(1)
     , _currentPhase(TrafficLightPhase::red)
 {}
 

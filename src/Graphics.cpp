@@ -1,15 +1,13 @@
-#include <iostream>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
 #include "Graphics.h"
 #include "Intersection.h"
+
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 void Graphics::simulate()
 {
     this->loadBackgroundImg();
-    while (true)
-    {
+    while (true) {
         // sleep at every iteration to reduce CPU usage
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
@@ -38,21 +36,17 @@ void Graphics::drawTrafficObjects()
     _images.at(2) = _images.at(0).clone();
 
     // create overlay from all traffic objects
-    for (const auto &it : _trafficObjects)
-    {
+    for (const auto &it : _trafficObjects) {
         double posx, posy;
         it->getPosition(posx, posy);
 
-        if (it->getType() == ObjectType::objectIntersection)
-        {
+        if (it->getType() == ObjectType::objectIntersection) {
             auto intersection = static_cast<Intersection*>(it.get());
 
             // set color according to traffic light and draw the intersection as a circle
             cv::Scalar trafficLightColor = intersection->trafficLightIsGreen() ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 0, 255);
             cv::circle(_images.at(1), cv::Point2d(posx, posy), 25, trafficLightColor, -1);
-        }
-        else if (it->getType() == ObjectType::objectVehicle)
-        {
+        } else if (it->getType() == ObjectType::objectVehicle) {
             cv::RNG rng(it->getID());
             int b = rng.uniform(0, 255);
             int g = rng.uniform(0, 255);

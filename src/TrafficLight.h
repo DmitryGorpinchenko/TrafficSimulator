@@ -1,12 +1,13 @@
 #ifndef TRAFFICLIGHT_H
 #define TRAFFICLIGHT_H
 
+#include "TrafficObject.h"
+
 #include <mutex>
 #include <atomic>
 #include <deque>
 #include <limits>
 #include <condition_variable>
-#include "TrafficObject.h"
 
 template <typename T>
 class MessageQueue
