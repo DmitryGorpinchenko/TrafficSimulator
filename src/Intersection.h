@@ -3,30 +3,21 @@
 
 #include "TrafficObject.h"
 #include "TrafficLight.h"
+#include "MessageQueue.h"
 
 #include <vector>
 #include <future>
 #include <mutex>
+#include <condition_variable>
 #include <memory>
-#include <atomic>
 
 class Street;
 class Vehicle;
 
-// auxiliary class to queue and dequeue waiting vehicles in a thread-safe manner
-class WaitingVehicles
+struct WaitingVehicle
 {
-public:
-    int getSize() const;
-
-    std::future<void> pushBack(std::shared_ptr<Vehicle> vehicle);
-    void permitEntryToFirstInQueue();
-
-private:
-    mutable std::mutex _mutex;
-
-    std::vector<std::shared_ptr<Vehicle>> _vehicles; // list of all vehicles waiting to enter corresponding intersection
-    std::vector<std::promise<void>> _promises;       // list of associated promises
+    std::shared_ptr<Vehicle> vehicle;
+    std::promise<void> promise;
 };
 
 class Intersection : public TrafficObject
@@ -47,12 +38,13 @@ public:
 private:
     void processVehicleQueue();
 
-    void setIsBlocked(bool isBlocked);
-
     std::vector<std::shared_ptr<Street>> _streets;   // list of all streets connected to this intersection
     TrafficLight _trafficLight;                      // traffic light of this intersection
-    WaitingVehicles _waitingVehicles;                // list of all vehicles and their associated promises waiting to enter the intersection
-    std::atomic<bool> _isBlocked;                    // flag indicating wether the intersection is blocked by a vehicle
+    MessageQueue<WaitingVehicle> _waitingVehicles;   // vehicles and their associated promises waiting to enter the intersection
+
+    std::mutex _mutex;
+    std::condition_variable _cv;
+    bool _isBlocked;
 };
 
 #endif
