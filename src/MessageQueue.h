@@ -15,6 +15,8 @@ public:
     void send(T &&msg);
     T receive();
 
+    void waitForMessage(const T &msg);
+
 private:
     std::condition_variable _cv;
     std::mutex _mutex;
@@ -51,6 +53,13 @@ T MessageQueue<T>::receive()
     T msg = std::move(_queue.front());
     _queue.pop_front();
     return msg;
+}
+
+template <typename T>
+void MessageQueue<T>::waitForMessage(const T &msg)
+{
+    while (receive() != msg)
+        ;
 }
 
 #endif

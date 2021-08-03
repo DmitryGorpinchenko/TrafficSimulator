@@ -9,12 +9,18 @@ Vehicle::Vehicle()
     : TrafficObject(ObjectType::objectVehicle)
     , _posStreet(0.0)
     , _speed(400)
+    , _entryGrantedMsg(1)
 {}
 
 void Vehicle::setCurrentDestination(std::shared_ptr<Intersection> destination)
 {
     _currDestination = std::move(destination);
     _posStreet = 0.0;
+}
+
+void Vehicle::notifyIntersectionEntryGranted(std::shared_ptr<Intersection> intersection)
+{
+    _entryGrantedMsg.send(std::move(intersection));
 }
 
 void Vehicle::simulate()
@@ -29,7 +35,7 @@ void Vehicle::drive()
     lck.unlock();
 
     bool hasEnteredIntersection = false;
-    const std::chrono::milliseconds cycleDuration(1); // duration of a single simulation cycle in ms
+    const std::chrono::milliseconds cycleDuration(1);
 
     auto cycleStart = std::chrono::steady_clock::now();
     while (true) {
@@ -55,14 +61,18 @@ void Vehicle::drive()
         dx = x2 - x1;
         dy = y2 - y1;
         l = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (x1 - x2));
-        xv = x1 + completion * dx; // new position based on line equation in parameter form
+        xv = x1 + completion * dx;
         yv = y1 + completion * dy;
         setPosition(xv, yv);
 
         // check wether halting position in front of destination has been reached
         if (completion >= 0.9 && !hasEnteredIntersection) {
             // request entry to the current intersection and wait until entry has been granted
-           _currDestination->waitForPermissionToEnter(get_shared_this());
+            _currDestination->addVehicleToQueue(get_shared_this());
+            _entryGrantedMsg.waitForMessage(_currDestination);
+            if (!_currDestination->trafficLightIsGreen()) {
+                _currDestination->waitForGreen();
+            }
 
             // slow down and set intersection flag
             _speed /= 10.0;
@@ -87,7 +97,7 @@ void Vehicle::drive()
             auto nextIntersection = nextStreet->getInIntersection()->getID() == _currDestination->getID() ? nextStreet->getOutIntersection() : nextStreet->getInIntersection();
 
             // notify _currDestination that vehicle has left BEFORE replacing it with new value right below
-            _currDestination->vehicleHasLeft(get_shared_this());
+            _currDestination->notifyVehicleLeft(get_shared_this());
 
             setCurrentDestination(std::move(nextIntersection));
             setCurrentStreet(std::move(nextStreet));

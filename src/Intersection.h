@@ -6,45 +6,37 @@
 #include "MessageQueue.h"
 
 #include <vector>
-#include <future>
-#include <mutex>
-#include <condition_variable>
 #include <memory>
 
 class Street;
 class Vehicle;
 
-struct WaitingVehicle
-{
-    std::shared_ptr<Vehicle> vehicle;
-    std::promise<void> promise;
-};
-
-class Intersection : public TrafficObject
+class Intersection : public TrafficObject, public std::enable_shared_from_this<Intersection>
 {
 public:
     Intersection();
 
     std::vector<std::shared_ptr<Street>> queryStreets(std::shared_ptr<Street> incoming) const; // return list of all outgoing streets
-    bool trafficLightIsGreen() const;
 
     void addStreet(std::shared_ptr<Street> street);
 
-    void waitForPermissionToEnter(std::shared_ptr<Vehicle> vehicle);
-    void vehicleHasLeft(std::shared_ptr<Vehicle> vehicle);
+    void addVehicleToQueue(std::shared_ptr<Vehicle> vehicle);
+    void notifyVehicleLeft(std::shared_ptr<Vehicle> vehicle);
+
+    bool trafficLightIsGreen() const;
+    void waitForGreen();
 
     void simulate() override;
+
+    std::shared_ptr<Intersection> get_shared_this() { return shared_from_this(); }
 
 private:
     void processVehicleQueue();
 
-    std::vector<std::shared_ptr<Street>> _streets;   // list of all streets connected to this intersection
-    TrafficLight _trafficLight;                      // traffic light of this intersection
-    MessageQueue<WaitingVehicle> _waitingVehicles;   // vehicles and their associated promises waiting to enter the intersection
-
-    std::mutex _mutex;
-    std::condition_variable _cv;
-    bool _isBlocked;
+    std::vector<std::shared_ptr<Street>> _streets;
+    TrafficLight _trafficLight;
+    MessageQueue<std::shared_ptr<Vehicle>> _waitingVehicles;
+    MessageQueue<std::shared_ptr<Vehicle>> _vehicleLeftMsg;
 };
 
 #endif

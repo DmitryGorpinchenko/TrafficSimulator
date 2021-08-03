@@ -15,8 +15,7 @@ TrafficLightPhase TrafficLight::getCurrentPhase() const
 
 void TrafficLight::waitForGreen()
 {
-    while (_msg.receive() != TrafficLightPhase::green)
-        ;
+    _msg.waitForMessage(TrafficLightPhase::green);
 }
 
 void TrafficLight::simulate()
